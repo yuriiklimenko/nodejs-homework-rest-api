@@ -5,13 +5,8 @@ const { v4 } = require("uuid");
 const contactsPath = path.join(__dirname, "contacts.json");
 
 const getListContacts = async () => {
-  try {
-    const contacts = await fs.readFile(contactsPath, "utf-8");
-
-    return JSON.parse(contacts);
-  } catch (error) {
-    throw new Error(error);
-  }
+  const contacts = await fs.readFile(contactsPath, "utf-8");
+  return JSON.parse(contacts);
 };
 
 const getContactById = async (contactId) => {
@@ -30,7 +25,10 @@ const removeContact = async (contactId) => {
       console.log(`There is no contact with id-${contactId}`);
       return null;
     } else {
-      const deletedContact = await getContactById(contactId);
+      const deletedContact = contacts.find(
+        (contact) => contact.id === contactId
+      );
+
       fs.writeFile(contactsPath, JSON.stringify(filteredContacts));
       console.log(`Contact with id-${contactId} has been deleted`);
       return deletedContact;
