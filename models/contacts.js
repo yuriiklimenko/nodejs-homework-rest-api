@@ -16,19 +16,22 @@ const getContactById = async (contactId) => {
 };
 
 const removeContact = async (contactId) => {
+  let deletedContact = null;
+
   try {
     const contacts = await getListContacts();
-    const filteredContacts = contacts.filter(
-      (contact) => contact.id !== contactId
-    );
+    const filteredContacts = contacts.filter((contact) => {
+      if (contact.id !== contactId) {
+        return contact;
+      } else {
+        deletedContact = contact;
+        return null;
+      }
+    });
     if (filteredContacts.length === contacts.length) {
       console.log(`There is no contact with id-${contactId}`);
       return null;
     } else {
-      const deletedContact = contacts.find(
-        (contact) => contact.id === contactId
-      );
-
       fs.writeFile(contactsPath, JSON.stringify(filteredContacts));
       console.log(`Contact with id-${contactId} has been deleted`);
       return deletedContact;
