@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const ctrlContacts = require("../controller");
+const ctrlContacts = require("../controllers/contactsController");
 const { asyncWrapper } = require("../helpers/apiHelpers");
+const { authMiddleware } = require("../middlewares/authMiddleware");
+
+router.use(authMiddleware);
 
 router.get("/", asyncWrapper(ctrlContacts.get));
 
