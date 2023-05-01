@@ -1,8 +1,13 @@
-const jwt = require("jsonwebtoken");
-const User = require("../services/schemas/user");
 require("dotenv").config();
 const secret = process.env.JWT_SECRET;
+const jwt = require("jsonwebtoken");
+const User = require("../services/schemas/user");
 const createError = require("http-errors");
+const gravatar = require("gravatar");
+
+const path = require("path");
+const fs = require("fs").promises;
+const Jimp = require("jimp");
 
 const registration = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -14,7 +19,9 @@ const registration = async (req, res, next) => {
   }
 
   try {
-    const newUser = new User({ username, email });
+    const avatarURL = gravatar.url(email);
+
+    const newUser = new User({ username, email, avatarURL });
 
     newUser.setPassword(password);
 
@@ -26,6 +33,7 @@ const registration = async (req, res, next) => {
       user: {
         email: userEmail,
         subscription: userSubscription,
+        avatarURL,
       },
     });
   } catch (error) {
@@ -49,7 +57,7 @@ const logIn = async (req, res, next) => {
   const token = jwt.sign(payload, secret, { expiresIn: "1h" });
 
   await User.findByIdAndUpdate(user._id, { token });
-  const { email: userEmail, subscription: userSubscription } = user;
+  const { email: userEmail, subscription: userSubscription, avatarURL } = user;
   res.json({
     status: "success",
     code: 200,
@@ -57,6 +65,7 @@ const logIn = async (req, res, next) => {
     user: {
       email: userEmail,
       subscription: userSubscription,
+      avatarURL,
     },
   });
 };
@@ -68,13 +77,14 @@ const logOut = async (req, res) => {
 };
 
 const current = async (req, res) => {
-  const { email, subscription } = req.user;
+  const { email, subscription, avatarURL } = req.user;
   res.status(200).json({
     status: "success",
     code: 200,
     user: {
       email,
       subscription,
+      avatarURL,
     },
   });
 };
@@ -88,7 +98,12 @@ const updateSubscription = async (req, res) => {
     { new: true }
   );
 
-  const { _id: id, email, subscription: newSubscription } = updatedUser;
+  const {
+    _id: id,
+    email,
+    subscription: newSubscription,
+    avatarURL,
+  } = updatedUser;
   res.json({
     status: "success",
     code: 200,
@@ -96,11 +111,35 @@ const updateSubscription = async (req, res) => {
       id,
       email,
       newSubscription,
+      avatarURL,
     },
   });
 };
 
-module.exports = updateSubscription;
+const avatarsDir = path.join(__dirname, "../", "public", "avatars");
+
+const updateAvatar = async (req, res) => {
+  const { path: tempDir, originalname } = req.file;
+  const avatarImage = await Jimp.read(tempDir);
+  avatarImage.resize(250, 250);
+  avatarImage.write(tempDir);
+  const { _id: id } = req.user;
+  const imageName = `${id}_${originalname}`;
+  try {
+    const resultUpload = path.join(avatarsDir, imageName);
+    await fs.rename(tempDir, resultUpload);
+    const avatarURL = path.join("public", "avatars", imageName);
+    await User.findByIdAndUpdate(req.user._id, { avatarURL });
+    res.json({
+      status: "success",
+      code: 200,
+      avatarURL,
+    });
+  } catch (error) {
+    await fs.unlink(tempDir);
+    throw error;
+  }
+};
 
 module.exports = {
   registration,
@@ -108,4 +147,5 @@ module.exports = {
   current,
   logOut,
   updateSubscription,
+  updateAvatar,
 };

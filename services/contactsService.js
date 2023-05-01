@@ -20,7 +20,6 @@ const getAllContacts = (userId, queryReq) => {
   }
 
   return Contact.find(query, "", {
-    // відаємо
     skip: (page - 1) * limit,
 
     limit: Number(limit),
