@@ -16,8 +16,6 @@ const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 app.use(logger(formatsLogger));
 app.use(cors());
 
-// роздача статики(для того чтоби
-// по етому пути сразу попадать на картинку http://localhost:3000/avatars/profile-default.png)
 app.use(express.static("public"));
 app.use("/api/user", userRouter);
 app.use("/api/contacts", contactsRouter);
