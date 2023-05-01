@@ -4,7 +4,8 @@ const mongoose = require("mongoose");
 const logger = require("morgan");
 const createError = require("http-errors");
 
-const authRouter = require("./api/authRouter");
+const userRouter = require("./api/userRouter");
+const contactsRouter = require("./api/contactsRouter");
 
 require("dotenv").config();
 
@@ -14,9 +15,11 @@ app.use(express.json());
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 app.use(logger(formatsLogger));
 app.use(cors());
-const contactsRouter = require("./api/contactsRouter");
 
-app.use("/api/users", authRouter);
+// роздача статики(для того чтоби
+// по етому пути сразу попадать на картинку http://localhost:3000/avatars/profile-default.png)
+app.use(express.static("public"));
+app.use("/api/user", userRouter);
 app.use("/api/contacts", contactsRouter);
 
 app.use(async (_, res, next) => {
