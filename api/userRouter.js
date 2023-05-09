@@ -5,6 +5,7 @@ const { asyncWrapper } = require("../helpers/apiHelpers");
 const {
   authValidation,
   subscriptionValidation,
+  emailSchema,
 } = require("../helpers/validation_schema");
 const {
   uploadFile,
@@ -39,6 +40,14 @@ router.patch(
   authMiddleware,
   uploadFile.single("avatar"),
   asyncWrapper(ctrlUser.updateAvatar)
+);
+
+router.get("/verify/:verificationToken", asyncWrapper(ctrlUser.verifyEmail));
+
+router.post(
+  "/verify",
+  validateBodySchema(emailSchema),
+  asyncWrapper(ctrlUser.resendEmailRequest)
 );
 
 module.exports = router;

@@ -8,6 +8,9 @@ const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs").promises;
 const Jimp = require("jimp");
+const { nanoid } = require("nanoid");
+
+const sendVerificationEmail = require("../helpers/sendVerificationEmail");
 
 const registration = async (req, res, next) => {
   const { username, email, password } = req.body;
@@ -20,13 +23,21 @@ const registration = async (req, res, next) => {
 
   try {
     const avatarURL = gravatar.url(email);
-
-    const newUser = new User({ username, email, avatarURL });
+    const verificationToken = nanoid();
+    const newUser = new User({ username, email, avatarURL, verificationToken });
 
     newUser.setPassword(password);
 
     await newUser.save();
     const { email: userEmail, subscription: userSubscription } = newUser;
+
+    const verifyEmail = {
+      to: email,
+      subject: "Registration succesfull. Please, verify your email",
+      html: `<a href="http://localhost:3000/api/user/verify/${verificationToken}" target="_blank">Click to verify your e-mail address</a>`,
+    };
+    await sendVerificationEmail(verifyEmail);
+
     res.status(201).json({
       status: "success",
       code: 201,
@@ -140,6 +151,55 @@ const updateAvatar = async (req, res) => {
     throw error;
   }
 };
+// ----------------------------------------------------
+const verifyEmail = async (req, res) => {
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
+
+  if (!user) {
+    throw createError.NotFound("User not found");
+  }
+
+  await User.findByIdAndUpdate(user._id, {
+    verify: true,
+    verificationToken: null,
+  });
+
+  res.status(200).json({
+    message: "Verification successful",
+  });
+};
+
+const resendEmailRequest = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new createError.NotFound("User not found");
+  }
+
+  if (user.verify) {
+    throw new createError.BadRequest("Verification has already been passed");
+  }
+
+  const verificationToken = nanoid();
+
+  await User.findByIdAndUpdate(user._id, {
+    verificationToken,
+  });
+  const mail = {
+    to: email,
+    subject: "E-mail verification",
+    html: `<a href="http://localhost:3000/api/user/verify/${verificationToken}" target="_blank">Click to verify your e-mail address</a>`,
+  };
+
+  await sendVerificationEmail(mail);
+  res.json({
+    status: "success",
+    code: 200,
+    message: "Verification email sent",
+  });
+};
 
 module.exports = {
   registration,
@@ -148,4 +208,6 @@ module.exports = {
   logOut,
   updateSubscription,
   updateAvatar,
+  verifyEmail,
+  resendEmailRequest,
 };
