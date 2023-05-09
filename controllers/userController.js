@@ -61,6 +61,10 @@ const logIn = async (req, res, next) => {
     throw createError.BadRequest("Email or password is wrong");
   }
 
+  if (!user.verify) {
+    throw createError.BadRequest("Email not verified");
+  }
+
   const payload = {
     userId: user._id,
   };
@@ -165,7 +169,9 @@ const verifyEmail = async (req, res) => {
     verificationToken: null,
   });
 
-  res.status(200).json({
+  res.json({
+    status: "success",
+    code: 200,
     message: "Verification successful",
   });
 };
