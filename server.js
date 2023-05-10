@@ -21,7 +21,7 @@ app.use("/api/user", userRouter);
 app.use("/api/contacts", contactsRouter);
 
 app.use(async (_, res, next) => {
-  next(createError.NotFound("Use api on routes: /api/contacts or /api/auth"));
+  next(createError.NotFound("Use api on routes: /api/contacts or /api/user"));
 });
 
 app.use(async (err, _, res, __) => {

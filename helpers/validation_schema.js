@@ -9,7 +9,12 @@ const subscriptionValidation = Joi.object({
   subscription: Joi.string().valid("starter", "pro", "business").required(),
 });
 
+const emailSchema = Joi.object({
+  email: Joi.string().required(),
+});
+
 module.exports = {
   authValidation,
   subscriptionValidation,
+  emailSchema,
 };
